@@ -17,9 +17,13 @@ The project follows a simple and organized structure:
 
 n8n_Code/
 ├── src/
-│   └── app.js          # Main application file containing the Express server logic
+
+│   └── app.js     # Main application file containing the Express server logic
+
 ├── .env.example        # Example environment variables file
+
 ├── package.json        # Lists project dependencies and scripts
+
 └── package-lock.json   # Records the exact version of every installed dependency
 
 
