@@ -41,6 +41,7 @@ PostgreSQL credentials
 
 ## Step 1: Clone the repository
 git clone https://github.com/almaharvest-com/n8n_Code.git
+
 cd n8n_Code
 
 ## Step 2: Start the containers
@@ -54,6 +55,7 @@ postgres → Database container
 n8n → Workflow engine
 
 ## Step 3: Verify running containers
+
 docker ps
 
 
