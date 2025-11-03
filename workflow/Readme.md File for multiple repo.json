@@ -1,0 +1,234 @@
+{
+  "name": "Readme.md file for multiple repo",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -496,
+        -32
+      ],
+      "id": "81c92fb3-a7f7-4ce3-a759-45f07af8ad41",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [\n  { json: { owner: \"almaharvest-com\", repo: \"alma-ai-backend\" } },\n  { json: { owner: \"almaharvest-com\", repo: \"n8n_Code\" } },\n  { json: { owner: \"almaharvest-com\", repo: \"Resources-By-Dr-Yann\" } },\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -288,
+        -32
+      ],
+      "id": "5f3b6d81-8cb8-45bf-a65e-1c7998bc41b8",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.github.com/repos/{{$json[\"owner\"]}}/{{$json[\"repo\"]}}/git/trees/main?recursive=1",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubOAuth2Api",
+        "options": {
+          "batching": {
+            "batch": {}
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -64,
+        -112
+      ],
+      "id": "c2cc0e39-24af-429c-a048-0721c8bae8b6",
+      "name": "HTTP Request",
+      "executeOnce": false,
+      "credentials": {
+        "githubOAuth2Api": {
+          "id": "F60k3AibuBKlNz2k",
+          "name": "GitHub account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const repos = $('Code in JavaScript').all(); // get all repos\nconst branch = \"main\";\n   const tree = $json.tree || [];\nconst allowedExtensions = [\n  \".js\", \".ts\", \".tsx\", \".json\", \".mjs\", \".jsx\", \".css\", \".html\", \".md\", \".py\", \".yml\", \".yaml\"\n];\n\nconst result = [];\n\nfor (const repoItem of repos) {\n  const owner = repoItem.json.owner;\n  const repo = repoItem.json.repo;\n  const validFiles = tree\n    .filter(f => f.type === \"blob\" && f.size < 300000 && allowedExtensions.some(ext => f.path.endsWith(ext)))\n    .map(f => `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${f.path}`); // backticks\n\n  result.push({\n    json: {\n      owner,\n      repo,\n      allUrls: validFiles.slice(0, 50).join(\"\\n\") // limit for token size\n    }\n  });\n}\n\nreturn result;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        128,
+        -32
+      ],
+      "id": "116d89c0-831a-4a4c-bd92-481c6fa623bc",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-pro",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-pro"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are an AI documentation assistant.\n\nBelow is a list of multiple repositories, each containing code file URLs.\nFor each repository, generate a **separate and complete README.md**.\n\nEach README should include:\n- Project name and purpose\n- Key technologies used\n- Folder structure overview (based on paths)\n- Features and functionalities\n- Setup and installation steps\n- How to run and deploy\n- Contribution guidelines\n- License (if applicable)\n\nHere are the repositories:\n{{ $json.repo }}\n{{ $json.repo }}\n{{ $json.repo }}\n\nCode Files of respective repos:\n{{ $json.allUrls }}\n{{ $json.allUrls }}\n{{ $json.allUrls }}\n\n\n\n\nReturn your result in this JSON format:\n\n[\n  {\n    \"repo\": \"<repository name>\",\n    \"readme\": \"<README.md content>\"\n  }\n]\n"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        336,
+        -32
+      ],
+      "id": "eac8ba6b-3ab5-4081-aed3-83aa93dd7ea2",
+      "name": "Message a model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "t4WImZZMWQQKDUcP",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get all incoming items (Gemini outputs)\nconst allItems = $items(); // this is an array of items from Gemini node\n\nlet results = [];\n\nallItems.forEach(item => {\n  let raw = item.json.content?.parts?.[0]?.text || '';\n  raw = raw.trim();\n\n  // Remove ```json or ``` code fences\n  if (raw.startsWith('```')) {\n    raw = raw.replace(/```json|```/g, '').trim();\n  }\n\n  // Parse JSON safely\n  let repos = [];\n  try {\n    repos = JSON.parse(raw);\n  } catch (err) {\n    throw new Error(`Failed to parse Gemini output for an item: ${err.message}`);\n  }\n\n  // Convert each repo into a separate n8n item\n  repos.forEach(repo => {\n    results.push({\n      json: {\n        owner: 'almaharvest-com',          // hardcode or dynamic if available\n        repo: repo.repo,\n        content: repo.readme,\n        filePath: 'README.md',\n        commitMessage: `update README.md via AI auto-doc for ${repo.repo}`\n      }\n    });\n  });\n});\n\nreturn results;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        688,
+        -32
+      ],
+      "id": "e29c733b-a35c-4dc5-b232-21abc7a925e8",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "file",
+        "operation": "edit",
+        "owner": {
+          "__rl": true,
+          "value": "={{ $json.owner }}",
+          "mode": "name"
+        },
+        "repository": {
+          "__rl": true,
+          "value": "={{ $json.repo }}",
+          "mode": "name"
+        },
+        "filePath": "README.md",
+        "fileContent": "={{ $json.content }}",
+        "commitMessage": "update README.md Via n8n AI-generated documentation",
+        "additionalParameters": {
+          "branch": {
+            "branch": "main"
+          }
+        }
+      },
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1.1,
+      "position": [
+        960,
+        -64
+      ],
+      "id": "f3a20b19-5c8a-4d30-915b-050891eab520",
+      "name": "Edit a file",
+      "webhookId": "bd24329d-0e55-4217-bae9-bb3d186a0df3",
+      "credentials": {
+        "githubOAuth2Api": {
+          "id": "F60k3AibuBKlNz2k",
+          "name": "GitHub account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "Edit a file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "4656e1d2-e90c-40a6-b45e-d4d6d4cda91b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e490eda231ca4395fde9f518dc4f31c13384f46c4841482d118c2803c2781e9d"
+  },
+  "id": "DxMdwM2AqeIUY76E",
+  "tags": []
+}

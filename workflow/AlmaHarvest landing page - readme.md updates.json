@@ -1,0 +1,284 @@
+{
+  "name": "AlmaHarvest Landing page - Readme.md Updates",
+  "nodes": [
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "owner": {
+          "__rl": true,
+          "value": "almaharvest-com",
+          "mode": "name"
+        },
+        "repository": {
+          "__rl": true,
+          "value": "alma-landing-website",
+          "mode": "name"
+        },
+        "events": [
+          "push"
+        ],
+        "options": {
+          "insecureSSL": false
+        }
+      },
+      "type": "n8n-nodes-base.githubTrigger",
+      "typeVersion": 1,
+      "position": [
+        -2336,
+        -240
+      ],
+      "id": "f39ea4d4-dbb2-4f6a-81e9-a6844dfc0fcb",
+      "name": "Github Trigger",
+      "webhookId": "b259cf4f-c928-45b0-87b5-cb4aaa9ac1e7",
+      "credentials": {
+        "githubOAuth2Api": {
+          "id": "F60k3AibuBKlNz2k",
+          "name": "GitHub account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://api.github.com/repos/almaharvest-com/alma-landing-website/contents/",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubOAuth2Api",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -2096,
+        -64
+      ],
+      "id": "a602ffa0-e500-4044-8a00-1aa471c08498",
+      "name": "HTTP Request",
+      "credentials": {
+        "githubOAuth2Api": {
+          "id": "F60k3AibuBKlNz2k",
+          "name": "GitHub account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Access the \"tree\" array inside the GitHub API response\nlet tree = [];\n\nfor (const item of items) {\n  if (Array.isArray(item.json.tree)) {\n    tree.push(...item.json.tree);\n  }\n}\n\n// Keep only blobs (files, not directories)\nconst blobs = tree.filter(entry => entry.type === 'blob' && entry.size < 500000);\n\n// Return one item per file\nreturn blobs.map(blob => ({ json: blob }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1648,
+        -352
+      ],
+      "id": "26342ce0-f31c-43d7-8bc9-d9dab4f1c748",
+      "name": "Code in JavaScript",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "url": "https://api.github.com/repos/almaharvest-com/alma-landing-website/git/trees/main?recursive=1",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubOAuth2Api",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1872,
+        -240
+      ],
+      "id": "6c72030b-deba-4d6e-bb02-405b7cad6fd6",
+      "name": "HTTP Request1",
+      "credentials": {
+        "githubOAuth2Api": {
+          "id": "F60k3AibuBKlNz2k",
+          "name": "GitHub account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const owner = \"almaharvest-com\";\nconst repo = \"alma-landing-website\";\nconst branch = \"main\";\n\n// Keep only files with useful extensions for README analysis\nconst allowedExtensions = [\n  \".js\", \".jsx\", \".ts\", \".tsx\", \".json\", \".css\", \".html\", \".md\", \".mjs\"\n];\n\nconst results = [];\n\nfor (const item of items) {\n  const path = item.json.path;\n  const size = item.json.size || 0;\n\n  // Skip large or non-code files\n  if (\n    item.json.type === \"blob\" &&\n    size < 500000 &&\n    allowedExtensions.some(ext => path.endsWith(ext))\n  ) {\n    // Create the RAW GitHub URL\n    const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${path}`;\n    results.push({\n      json: {\n        path,\n        size,\n        rawUrl\n      }\n    });\n  }\n}\n\nreturn results;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1424,
+        -160
+      ],
+      "id": "4ebedf17-c41b-4e09-8305-25a93861911e",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Combine all raw URLs from previous node into a single string\nconst urls = items.map(item => item.json.rawUrl).join(\"\\n\");\n\nreturn [\n  {\n    json: {\n      allUrls: urls\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1232,
+        -304
+      ],
+      "id": "9d85b6f8-621f-4891-a05a-cc841f1f920f",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-pro",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-pro"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are an AI documentation assistant.\n\nAnalyze the following source files from this GitHub repository and write a complete, professional README.md for it.  \nInclude:\n- Project title and short description  \n- Key technologies used  \n- Folder structure overview  \n- Setup and installation steps  \n- How to run locally or deploy  \n- Optional: contribution guidelines and license info  \n\nHere are the code files to analyze:\n{{ $json[\"allUrls\"] }}\n"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        -992,
+        -288
+      ],
+      "id": "573e37b9-68b0-401a-bd4f-aba8d9a5b2d9",
+      "name": "Message a model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "t4WImZZMWQQKDUcP",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "file",
+        "operation": "edit",
+        "owner": {
+          "__rl": true,
+          "value": "almaharvest-com",
+          "mode": "name"
+        },
+        "repository": {
+          "__rl": true,
+          "value": "alma-landing-website",
+          "mode": "list",
+          "cachedResultName": "alma-landing-website",
+          "cachedResultUrl": "https://github.com/almaharvest-com/alma-landing-website"
+        },
+        "filePath": "README.md",
+        "fileContent": "={{ $json.content.parts[0].text }}\n{{ $json.content.parts[1].text }} \n{{ $json.content.parts[2].text }} ",
+        "commitMessage": "Auto update README.md via n8n",
+        "additionalParameters": {
+          "branch": {
+            "branch": "main"
+          }
+        }
+      },
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1.1,
+      "position": [
+        -624,
+        -272
+      ],
+      "id": "e428b8a2-11cc-4ccb-a1f9-8d45f5744d7c",
+      "name": "Edit a file",
+      "webhookId": "3315afe3-7efe-4714-8af1-2a1b28ee0ac4",
+      "credentials": {
+        "githubOAuth2Api": {
+          "id": "F60k3AibuBKlNz2k",
+          "name": "GitHub account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Github Trigger": {
+      "main": [
+        []
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Edit a file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "6e49171f-bb3f-4dc4-a658-458f6db580f6",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e490eda231ca4395fde9f518dc4f31c13384f46c4841482d118c2803c2781e9d"
+  },
+  "id": "yb4xTR0QPMSlKyJb",
+  "tags": []
+}

@@ -1,0 +1,366 @@
+{
+  "name": "Website Monitoring(Task1)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "triggerAtMinute": "={{ 0 }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -928,
+        208
+      ],
+      "id": "b261af2e-48bb-452d-b29b-9c59bc96ef09",
+      "name": "Schedule Trigger",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5de23514-e56d-44c7-8e02-41defba9502b",
+              "name": "urls",
+              "value": "[   \"https://almaharvest.com\",   \"https://www.almamaps.ai\",   \"https://api.quarkshub.com/\",   \"https://almaforum.ai\" ]",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -720,
+        208
+      ],
+      "id": "57d6c182-3a81-4e20-9787-f173737211c6",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "url": "={{$json[\"urls\"]}}",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {}
+          ]
+        },
+        "options": {
+          "redirect": {
+            "redirect": {}
+          },
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          },
+          "timeout": 10000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -304,
+        144
+      ],
+      "id": "6663d3d2-327d-49ac-938a-449f6ade1b72",
+      "name": "HTTP Request",
+      "retryOnFail": true,
+      "notesInFlow": false,
+      "alwaysOutputData": true,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "urls",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        -512,
+        208
+      ],
+      "id": "f1a714b4-45ad-4818-9482-439f5265454b",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "7ec7b95a-6f29-4225-85c8-a71357a3af53",
+              "leftValue": "={{$json[\"statusCode\"]}}",
+              "rightValue": 200,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            },
+            {
+              "id": "2a05fbcb-3705-4d5e-b3fd-f0b276758de5",
+              "leftValue": "={{$json[\"statusCode\"]}}",
+              "rightValue": 400,
+              "operator": {
+                "type": "number",
+                "operation": "lt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {
+          "ignoreCase": "={{ false }}"
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -64,
+        80
+      ],
+      "id": "97b88d20-46ff-4476-bc23-19eff3e3c9c3",
+      "name": "If",
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c69ca1f0-7d2e-4600-bdf1-a611f5c85e1a",
+              "name": "=urls",
+              "value": "= {{$json[\"urls\"]}}",
+              "type": "string"
+            },
+            {
+              "id": "371db067-ec65-4b85-a024-0e44901684e6",
+              "name": "=statusCode",
+              "value": "={{ $json[\"statusCode\"] || \"N/A\" }}\n",
+              "type": "string"
+            },
+            {
+              "id": "f8894ad5-2fc4-4d7e-aee8-834e600f07bb",
+              "name": "=statusMessage",
+              "value": "={{ $json[\"statusMessage\"] || $json[\"error\"][\"message\"] || \"Unknown error\" }}\n",
+              "type": "string"
+            },
+            {
+              "id": "f2315992-df0b-45bd-81e4-afbe0b10811f",
+              "name": "timestamp",
+              "value": "={{$now}}",
+              "type": "string"
+            },
+            {
+              "id": "b6f618cd-4598-4ded-8bd0-3d5bbace9c35",
+              "name": "=errorMessage",
+              "value": "={{ $json[\"error\"][\"message\"] || \"None\" }}\n",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        208,
+        272
+      ],
+      "id": "ede8264a-14e5-423f-866c-3fbb65b94475",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.0-flash-lite",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.0-flash-lite"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are an assistant that summarizes website downtime incidents.\nKeep summaries short (max 2 sentences) and under 320 characters.\n",
+              "role": "model"
+            },
+            {
+              "content": "=Summarize this incident for an on-call engineer:\nURL: {{$json[\"urls\"]}}\nStatus: {{$json[\"statusCode\"]}}\nError: {{$json[\"errorMessage\"]}}\nTime: {{$json[\"timestamp\"]}}\n"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        416,
+        272
+      ],
+      "id": "04d437b2-0a99-4b24-8f4f-68b818a5b1af",
+      "name": "Message a model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "t4WImZZMWQQKDUcP",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.resend.com/emails",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer re_h688iLtW_NdX6AKdGUUyf8VsxYRT6ieEb"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "=json",
+        "specifyBody": "json",
+        "bodyParameters": {
+          "parameters": [
+            {}
+          ]
+        },
+        "jsonBody": "={\n  \"from\": \"system@orangesphere.io\",\n  \"to\": \"yousuf@almaharvest.com\",\n  \"subject\": \"⚠️ Website Downtime Alert: {{ $('HTTP Request').item.json.urls }}\",\n\"html\": \"<h2>⚠️ Website Downtime Alert</h2><p>The site {{ $('HTTP Request').item.json.urls }} is down.</p>\"\n\n\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        816,
+        112
+      ],
+      "id": "2b8ea71f-7dc0-44f6-a830-ca28744c75f7",
+      "name": "HTTP Request1",
+      "retryOnFail": true
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "a0b65272-c5c2-4604-83cb-1b97f8f9396c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e490eda231ca4395fde9f518dc4f31c13384f46c4841482d118c2803c2781e9d"
+  },
+  "id": "W4Iw45aKsxIBoYJ3",
+  "tags": []
+}

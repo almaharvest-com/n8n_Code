@@ -1,0 +1,177 @@
+{
+  "name": "Backend API Monitoring (Task 3)",
+  "nodes": [
+    {
+      "parameters": {
+        "url": "https://api.almamaps.ai",
+        "options": {
+          "redirect": {
+            "redirect": {}
+          },
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "text"
+            }
+          },
+          "timeout": 3000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -960,
+        112
+      ],
+      "id": "451aa5bc-7045-4b26-9c2e-124775e72c77",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "1cf45d70-0755-4618-8131-46afe2b81cd5",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "OK",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            },
+            {
+              "id": "b43e5674-5b29-4525-ba53-5e3a01365013",
+              "leftValue": "={{ $json.queue_delay }}",
+              "rightValue": 10,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -560,
+        80
+      ],
+      "id": "282b996f-9ae6-4600-a5f6-0c5b18c3620e",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [\n  {\n    json: {\n      status: \"ok\",\n      queue_delay: 15\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -768,
+        16
+      ],
+      "id": "46382503-9ecf-46f2-9e9e-414ee6422058",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "from": "=+14155238886",
+        "to": "=7261895853",
+        "toWhatsapp": true,
+        "message": "=🚨 Alert API Health Check: Queue delay is  {{ $json.queue_delay }} and \n Status Code is: {{ $json.status }}\nminutes. Please check the system.",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [
+        -304,
+        -80
+      ],
+      "id": "ac168928-7f40-401c-b0c0-59d92eaf149f",
+      "name": "Send an SMS/MMS/WhatsApp message"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1200,
+        -16
+      ],
+      "id": "1a521fe3-3b03-4fec-9840-4c8a504e0ebb",
+      "name": "Schedule Trigger"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Send an SMS/MMS/WhatsApp message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "94005d43-dffc-4a45-9bdb-76155d884984",
+  "meta": {
+    "instanceId": "e490eda231ca4395fde9f518dc4f31c13384f46c4841482d118c2803c2781e9d"
+  },
+  "id": "kqyeoRuGAxY7MySl",
+  "tags": []
+}

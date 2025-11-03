@@ -1,0 +1,118 @@
+{
+  "name": "Database Backup - Google Drive(Task 4)",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -480,
+        96
+      ],
+      "id": "14f4602e-ce82-4717-b686-f9a89e664828",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT * FROM employee;\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -256,
+        0
+      ],
+      "id": "c89090fa-4a9b-4295-a402-8f3f9719a4b5",
+      "name": "Execute a SQL query"
+    },
+    {
+      "parameters": {
+        "options": {
+          "fileName": "employee.csv"
+        }
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "96f486fd-b933-46fd-bfe8-582de898a143",
+      "name": "Convert to File"
+    },
+    {
+      "parameters": {
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "root",
+          "cachedResultName": "/ (Root folder)"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        192,
+        64
+      ],
+      "id": "095b4354-477f-4395-85ec-14351abc3bec",
+      "name": "Upload file",
+      "retryOnFail": true,
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query": {
+      "main": [
+        [
+          {
+            "node": "Convert to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File": {
+      "main": [
+        [
+          {
+            "node": "Upload file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "b0ce4312-1b08-43d8-ae91-43ea8c56dd45",
+  "meta": {
+    "instanceId": "e490eda231ca4395fde9f518dc4f31c13384f46c4841482d118c2803c2781e9d"
+  },
+  "id": "lA9mqPHZel5Gr4Vt",
+  "tags": []
+}

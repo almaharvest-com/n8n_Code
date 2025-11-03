@@ -1,0 +1,173 @@
+{
+  "name": "Google Drvie - Github Automation(Task 2)",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyHour"
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "value": "1Kl_OqmcgIl1QQGkNZieOFwurFuw57hb9",
+          "mode": "id"
+        },
+        "event": "fileCreated",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "typeVersion": 1,
+      "position": [
+        -464,
+        112
+      ],
+      "id": "5ac36ed0-f9f0-449e-93a5-5eb9f25f72d4",
+      "name": "Google Drive Trigger"
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "returnAll": true,
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "https://drive.google.com/drive/folders/1Kl_OqmcgIl1QQGkNZieOFwurFuw57hb9",
+            "mode": "url"
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -192,
+        16
+      ],
+      "id": "b5b812fc-6a89-4461-b7ea-3e0ca773825f",
+      "name": "Search files and folders"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {
+          "fileName": "={{ $json.name }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        16,
+        128
+      ],
+      "id": "473ec441-73f1-4cd9-ad4d-eaa2fa58663d",
+      "name": "Download file"
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(item => {\n  const ext = item.binary.data.fileExtension.toLowerCase();\n  let targetPath = \"\";\n\n  if ([\"pdf\", \"docx\", \"doc\", \"png\", \"jpg\", \"jpeg\"].includes(ext)) {\n    targetPath = `docs/${item.binary.data.fileName}`;\n  } else if ([\"py\", \"js\", \"ipynb\", \"html\", \"txt\"].includes(ext)) {\n    targetPath = `code/${item.binary.data.fileName}`;\n  } else if (\n    item.json.name.toLowerCase().includes(\"swap-ga\") ||\n    item.json.name.toLowerCase().includes(\"hyperspectral\") ||\n    item.json.name.toLowerCase().includes(\"orus\") ||\n    item.json.name.toLowerCase().includes(\"yann\")\n  ) {\n    targetPath = `research/${item.binary.data.fileName}`;\n  } else {\n    targetPath = `metadata/${item.binary.data.fileName}`;\n  }\n\n  item.json.targetPath = targetPath;\n  return item;\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        208,
+        64
+      ],
+      "id": "0800faed-dc8a-48c5-9240-ad7debf4b658",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "get",
+        "owner": {
+          "__rl": true,
+          "value": "almaharvest-com",
+          "mode": "name"
+        },
+        "repository": {
+          "__rl": true,
+          "value": "Resources-By-Dr-Yann",
+          "mode": "name"
+        },
+        "filePath": "={{$json[\"targetPath\"]}}",
+        "additionalParameters": {}
+      },
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1.1,
+      "position": [
+        448,
+        128
+      ],
+      "id": "ee053c55-9b82-4bbc-82a9-d24ba50c33e0",
+      "name": "Get a file",
+      "webhookId": "b186cff9-abcf-4911-a450-fc456216a93b"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Drive Trigger": {
+      "main": [
+        [
+          {
+            "node": "Search files and folders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search files and folders": {
+      "main": [
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Get a file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "f86dc008-2d9a-46f3-abe7-1f3aa62a2be6",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e490eda231ca4395fde9f518dc4f31c13384f46c4841482d118c2803c2781e9d"
+  },
+  "id": "DrTUIBzu8hz5DdJ4",
+  "tags": []
+}

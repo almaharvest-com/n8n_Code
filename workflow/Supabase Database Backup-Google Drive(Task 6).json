@@ -1,0 +1,144 @@
+{
+  "name": "Supabase Database Backup - Google Drive(Task 6)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -3456,
+        -528
+      ],
+      "id": "444c8a78-8f9f-4e79-846f-4c5395833b7e",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a3483121-2ff9-450f-842b-2b45b48270e3",
+              "name": "BACKUP_PATH",
+              "value": "/backups/supabase/supabase-20250922_1013.sql.gz",
+              "type": "string"
+            },
+            {
+              "id": "633f5aaf-83a4-4916-a570-6d62caa33bc2",
+              "name": "BACKUP_NAME",
+              "value": "supabase-20250922_1013.sql.gz",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -3104,
+        -640
+      ],
+      "id": "9d7a1766-74ee-448b-8a58-1978ab23161d",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "fileSelector": "={{ $json.BACKUP_PATH }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        -2896,
+        -640
+      ],
+      "id": "518f2175-d9ff-4386-86b8-a54ca54ef77c",
+      "name": "Read/Write Files from Disk"
+    },
+    {
+      "parameters": {
+        "name": "supabase-20250922_1013.sql.gz",
+        "driveId": {
+          "__rl": true,
+          "value": "15zEn06wPdcnG8L1dMWdR_8Svtc4AhA8R",
+          "mode": "id"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "15zEn06wPdcnG8L1dMWdR_8Svtc4AhA8R",
+          "mode": "list",
+          "cachedResultName": "backup",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/15zEn06wPdcnG8L1dMWdR_8Svtc4AhA8R"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -2640,
+        -688
+      ],
+      "id": "a3d68075-6ec9-4416-b883-efc8db1b6e37",
+      "name": "Upload file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "ZYzmJ8sYoBvTSFeQ",
+          "name": "Google Drive account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk": {
+      "main": [
+        [
+          {
+            "node": "Upload file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "890f8806-24c8-46c0-bc91-28007e3bf2da",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e490eda231ca4395fde9f518dc4f31c13384f46c4841482d118c2803c2781e9d"
+  },
+  "id": "ZPddj2WUmsiiDSDb",
+  "tags": []
+}

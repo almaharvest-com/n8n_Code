@@ -1,0 +1,194 @@
+{
+  "name": "Monitoring CPU & RAM of Remote Server(Task 5)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 10
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1184,
+        224
+      ],
+      "id": "013a7f3f-34c2-4e5e-816c-c45948e301ef",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "jsCode": "const output = $json[\"stdout\"] || \"\";\nconst lines = output.split(\"\\n\");\n\n// CPU\nconst cpuLine = lines.find(l => l.includes(\"Cpu(s)\"));\nlet cpuUsage = 0;\nif (cpuLine) {\n  const idleMatch = cpuLine.match(/(\\d+\\.\\d+)\\s*id/);\n  if (idleMatch) {\n    const idle = parseFloat(idleMatch[1]);\n    cpuUsage = 100 - idle;\n  }\n}\n\n// RAM\nconst memLine = lines.find(l => l.startsWith(\"Mem:\"));\nlet ramUsage = 0;\nif (memLine) {\n  const parts = memLine.trim().split(/\\s+/);\n  const total = parseInt(parts[1], 10);\n  const used = parseInt(parts[2], 10);\n  if (total > 0) ramUsage = (used / total) * 100;\n}\n\n// Disk (root \"/\")\nconst diskLine = lines.find(l => l.includes(\" /$\"));\nlet diskUsage = 0;\nif (diskLine) {\n  const parts = diskLine.trim().split(/\\s+/);\n  const percent = parts[4]; // e.g. \"68%\"\n  diskUsage = parseInt(percent.replace(\"%\",\"\"), 10);\n}\n\nreturn [{\n  cpu: parseFloat(cpuUsage.toFixed(2)),\n  ram: parseFloat(ramUsage.toFixed(2)),\n  disk: parseFloat(diskUsage.toFixed(2)),\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -656,
+        240
+      ],
+      "id": "3aa00847-8ddb-476c-9d83-a4c92f57c76b",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "accbc19c-cea1-4cd9-a567-cb1fc0a3e025",
+              "leftValue": "={{ $json.cpu }}",
+              "rightValue": 80,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            },
+            {
+              "id": "47c16ebf-1e34-4446-a4c7-494e521ac767",
+              "leftValue": "={{ $json.ram }}",
+              "rightValue": 80,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            },
+            {
+              "id": "7c5ea9c5-34e2-4718-968a-9632a875e0b7",
+              "leftValue": "={{ $json.disk < 3000 }}\n",
+              "rightValue": 80,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -416,
+        96
+      ],
+      "id": "1b06cf85-0a9a-4918-ad4c-b11c42003ff7",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.resend.com/emails",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer re_h688iLtW_NdX6AKdGUUyf8VsxYRT6ieEb"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"from\": \"system@orangesphere.io\",\n  \"to\": \"yousuf@almaharvest.com\",\n  \"subject\": \"🚨 ALERT: High Server Usage\",\n  \"html\": \"<b>REAL-TIME ALERT</b><br>CPU: {{$json.cpu}}%<br>RAM: {{$json.ram}}%<br>Disk: {{$json.disk}}%<br><br>Please check immediately\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -112,
+        256
+      ],
+      "id": "ec6ff4e5-1baf-43fe-9a0b-8a24b903b190",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "authentication": "privateKey",
+        "command": "top -bn1 | grep \"Cpu(s)\"; free -m; df -h"
+      },
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        -944,
+        144
+      ],
+      "id": "4bb14346-21c9-4376-9753-711c6f90187d",
+      "name": "Execute a command",
+      "credentials": {
+        "sshPrivateKey": {
+          "id": "GdBkT6xoJKFpInZx",
+          "name": "SSH Private Key account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Execute a command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a command": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "f9b1f7d2-4fc0-4588-bfcb-322b74b1304f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e490eda231ca4395fde9f518dc4f31c13384f46c4841482d118c2803c2781e9d"
+  },
+  "id": "d858r3GlVMpXCFcb",
+  "tags": []
+}
